@@ -22,11 +22,32 @@ import psutil
 from pywinauto.application import Application
 import mss
 from PIL import Image
+import requests
+
+
+TESTING = True
 
 
 # Replace with your bot token and channel ID
-# TOKEN = "MTM5MTI0OTMzMjM5MjU1ODYyMg.GjMXeD.4gM7CA7JvUqHl6JhbrUQrhWaRU_uAqBvVTkcng" # MAIN
-TOKEN = "MTM5MTgyNjUxNDA1OTcyNzAwMA.G-1-Ad.VtaKR-33aMWne8JfgseJSQlw8d-LYXu9p7alrM" # TESTING
+
+def retriveToken():
+    global TESTING
+    url = "https://us.infisical.com/api/v3/secrets/raw/token"
+
+    if TESTING:
+        env = "dev"
+    else:
+        env = "prod"
+
+    querystring = {"secretPath":"/","type":"shared","viewSecretValue":"true","expandSecretReferences":"false","include_imports":"false","environment":env,"workspaceId":"0205c328-6c4a-4423-a1d0-094aea89dd82"}
+
+    headers = {"Authorization": "Bearer st.702c0a06-2562-4bf1-bdef-2c50b90c4d31.2465a432916e4723b9cfd8defe9daac3.9c0a5990cc2538635cf3306edb8371b6"}
+
+    response = requests.request("GET", url, headers=headers, params=querystring)
+    return response.json()["secret"]["secretValue"]
+
+
+TOKEN = retriveToken()
 
 # CHANNEL_ID = 1391249089152155769  # MAIN
 CHANNEL_ID = 1391826973432483931  # TESTING
@@ -53,6 +74,8 @@ async def on_ready():
     channel = bot.get_channel(CHANNEL_ID)
     await channel.send(content="Beeto has logged in!")
     await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
+    if not TESTING:
+        startTerms(5)
     activityChanger.start()
 
 
