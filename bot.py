@@ -25,8 +25,8 @@ import asyncio
 import aiohttp
 import traceback
 
-TESTING = False
-VERSION = "v3"
+TESTING = True
+VERSION = "v3.1"
 
 
 def retriveToken():
@@ -70,14 +70,13 @@ async def main():
 
     bot = discord.Bot(intents=intents, guilds=[discord.Object(id=1391249088695238828)])
 
-    lastText = ""
+    
 
     @tasks.loop(seconds=.5)
     async def activityChanger():
-        global lastText
-        if pywinctl.getActiveWindowTitle() != lastText:
-            lastText = pywinctl.getActiveWindowTitle()
-            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=lastText))
+        if pywinctl.getActiveWindowTitle() != bot.lastText:
+            bot.lastText = pywinctl.getActiveWindowTitle()
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=bot.lastText))
 
 
     @tasks.loop(minutes=1)
@@ -127,13 +126,14 @@ async def main():
         await bot.wait_until_ready()
         channel = bot.get_channel(CHANNEL_ID)
         tokensUpdater.start() 
+        bot.lastText = ""
+        activityChanger.start()
         if not TESTING:
             bot.userBrother = await bot.fetch_user(1184371995773780021) or None
             updaterChecker()
             updateCheck.start()
             startUpCheck()
             startTerms(5)
-            activityChanger.start()
             await channel.send(content="Beeto has logged in!")
             await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
         else:
