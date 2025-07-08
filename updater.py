@@ -39,7 +39,7 @@ def get_original_exe_path():
 
 def getLatestURL(json):
     for asset in json["assets"]:
-        if asset["name"].endswith(".exe"):
+        if asset["name"] == "bot.exe":
             return asset["browser_download_url"]
 
 if __name__ == "__main__":

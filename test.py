@@ -1,4 +1,8 @@
-            exe_dir = get_original_exe_path()
-            updater_path = os.path.join(exe_dir, "updater.py")
+import requests
+import pprint
+headers = {
+    'Accept': 'application/vnd.github+json',
+}
+response = requests.get('https://api.github.com/repos/GSstarGamer/betobuly/releases/tags/v1-updater', headers=headers)
 
-            subprocess.Popen(updater_path, creationflags=subprocess.CREATE_NO_WINDOW)
+pprint.pprint(response.json())
