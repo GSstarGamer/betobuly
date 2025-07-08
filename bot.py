@@ -21,7 +21,7 @@ import requests
 
 
 TESTING = False
-VERSION = "v3"
+VERSION = "v2"
 
 
 def retriveToken():
