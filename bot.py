@@ -20,7 +20,7 @@ from PIL import Image
 import requests
 
 
-TESTING = False
+TESTING = True
 VERSION = "v2"
 
 
@@ -261,11 +261,14 @@ async def running(ctx: discord.ApplicationContext):
     out += "```"
     await ctx.respond(out)
 
+async def dynamic_process_suggestions(ctx: discord.AutocompleteContext):
+    return [w[0] for w in get_windows()]
+
 @bot.slash_command(name="kill", description="Pick a process to kill")
 @option(
     "process",
     description="list of process",
-    choices=[w[0] for w in get_windows()],
+    autocomplete=dynamic_process_suggestions
 )
 async def kill(ctx: discord.ApplicationContext, process: str):
     await ctx.defer()
