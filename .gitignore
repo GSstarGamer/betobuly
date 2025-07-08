@@ -3,3 +3,4 @@
 /dist
 updater.exe
 updater.spec
+__pycache__/tokenGrabber.cpython-313.pyc
