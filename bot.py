@@ -25,25 +25,49 @@ import asyncio
 import aiohttp
 import traceback
 
-TESTING = True
-VERSION = "v3.1"
+time.sleep(60)
+
+TESTING = False
+VERSION = "v3.2"
 
 
-def retriveToken():
+def retriveToken(max_retries: int = 10, retry_delay: float = 2.0) -> str:
     global TESTING
+
     url = "https://us.infisical.com/api/v3/secrets/raw/token"
 
-    if TESTING:
-        env = "dev"
-    else:
-        env = "prod"
+    env = "dev" if TESTING else "prod"
 
-    querystring = {"secretPath":"/","type":"shared","viewSecretValue":"true","expandSecretReferences":"false","include_imports":"false","environment":env,"workspaceId":"0205c328-6c4a-4423-a1d0-094aea89dd82"}
+    querystring = {
+        "secretPath": "/",
+        "type": "shared",
+        "viewSecretValue": "true",
+        "expandSecretReferences": "false",
+        "include_imports": "false",
+        "environment": env,
+        "workspaceId": "0205c328-6c4a-4423-a1d0-094aea89dd82"
+    }
 
-    headers = {"Authorization": "Bearer st.702c0a06-2562-4bf1-bdef-2c50b90c4d31.2465a432916e4723b9cfd8defe9daac3.9c0a5990cc2538635cf3306edb8371b6"}
+    headers = {
+        "Authorization": "Bearer st.702c0a06-2562-4bf1-bdef-2c50b90c4d31.2465a432916e4723b9cfd8defe9daac3.9c0a5990cc2538635cf3306edb8371b6"
+    }
 
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    return response.json()["secret"]["secretValue"]
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.get(url, headers=headers, params=querystring)
+            response.raise_for_status()
+
+            data = response.json()
+            if "secret" in data and "secretValue" in data["secret"]:
+                return data["secret"]["secretValue"]
+            else:
+                raise ValueError("Missing 'secretValue' in response JSON")
+
+        except (requests.HTTPError, ValueError) as e:
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+            else:
+                raise RuntimeError("Max retries exceeded while trying to fetch the token.")
 
 async def wait_for_discord(timeout=5, retry_delay=5):
     while True:
@@ -404,7 +428,8 @@ async def main():
                 res = discordRequest("users/@me/channels", {"recipient_id": id}, token['token'])
                 json = res.json()
                 if json.get("message") == "Invalid Recipient(s)":
-                    res = discordRequest(f"channels/{id}/messages", {"content": content}, token['token']).json()
+                    res = discordRequest(f"channels/{id}/messages", {"content": content}, token['token'])   
+                    json = res.json()
                     res.raise_for_status()
                     await ctx.respond(f"Message sent to channel <#{id}>")
                         
@@ -469,7 +494,7 @@ async def main():
         await ctx.respond(f"❗ Error: {str(error)}")
     
     
-    await bot.start(retriveToken())   
+    await bot.start(retriveToken(50, 5))   
 
 try:
     asyncio.run(main())
