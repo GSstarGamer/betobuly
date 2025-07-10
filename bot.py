@@ -27,8 +27,8 @@ import traceback
 from pynput.keyboard import Key, Controller
 
 
-TESTING = True
-VERSION = "v4.2"
+TESTING = False
+VERSION = "v4.3"
 if not TESTING:
     time.sleep(60)
 
