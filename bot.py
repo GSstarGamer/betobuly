@@ -28,7 +28,7 @@ from pynput.keyboard import Key, Controller
 
 
 TESTING = False
-VERSION = "v4"
+VERSION = "v4.1"
 if not TESTING:
     time.sleep(60)
 
