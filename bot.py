@@ -509,12 +509,12 @@ async def main():
         await ctx.defer()
         keyboard = Controller()
 
-        key = key_map.get(key)
+        classedKey = key_map.get(key)
 
         msg = await ctx.respond(f"Pressing key {key} for {hold} seconds...")
-        keyboard.press(key)
+        keyboard.press(classedKey)
         time.sleep(hold)
-        keyboard.release(key)
+        keyboard.release(classedKey)
         await msg.edit(content=f"Finished pressing key {key} for {hold} seconds!")
 
 
