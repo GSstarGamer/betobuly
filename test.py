@@ -1,30 +1,47 @@
-import requests
+import ctypes
 import time
-import webbrowser
 
-cookie = "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_CAEaAhAB.978C95ABD2A2A9A0C20F910B70153588D80B1D93DBB27152589802CF4796DCFB5169ACDBAE70412EE3373118A5381A25F8CDD9DC904E415993F8A490CF60B39052A9D77D8D5935000CE42CEB9808F7945CEBB8EB9B5AF65EB98FB8AD427830A75B8F9B227E81BF68D44B4DBDF1D800650D8CD595D77A8DBCA93A82FBBA1E5CA17C6DAD8E5377230B07A1BF5F3347D9AF226311E336597A1FA165383F5D9465124D2B7A0B00B813B964B402AE6BA88D9BF4EACD2001397BA4E9B691DC612D23B3CA8341B4341BD5E529E155E80DBE03A3AF2434EAA21DDC8FB9A530071C216CBC08E827A3C6096A652602EF2944835EC55742987062415DDC6FD0C48BBF469BD84CEA2D43840A8300CB5F7666F74F416ECBADB97602D25A979B9074D45B3836579738135A5329CCA89E95A568D173DBD1529A44B9FF4470AB143B06A4E2C4AFABABBEF8E51EC72409CECD1B7BEE714DC7579B6AD54C8CD87F4BDEFF9347B5121AE7BEE3C21660347F1879AC8E8D5622A795A2901CD1E8F28938015009ACB9151EA4F90CD05176B26714153B6BED87BEE5F544ED13C8E33AF68B97B6F5523F176465D2B6DE2AF4EB016621FF6A8DC19842D5E5017058183111822C4C9819367158F6A57CDC84920D0084A1C6E2F5509D19D4B812EA77CB4DE3D60FAD99689E4D47574C2A0F99EF97DE132419428F9F37C3B9BD3C3A343509ED446016B4224BC1FB4FB36375441107B7D94154B5C43C30920CB97B40F7B0D859A98438F7B7786564CD88BC852DC9836BBB241EF2BA6D30819DED59AF2F1D77BBD05E73C1198191F3066E2BB8BBB2D6F8C75E181BF87DAD84095B7D16918E184A4853928A5E0F02949B8FAE101E4BDF780A3BA22F6F52EEBC41CC11CE3C8430580559A4277D0050D1654D9B35AD8C62A041C652BAE4300BD17367B1DD6C1114F21E63B5E17A941866EF6B20718DB663EC4B9F01DD6582DCFAAAA29368BADDE4ECE364D2071DCF536C8228D356C93DB8AA548ECA9249888697E04F419A101AFA50FB70FC37C9A9CF2913524BFAFC9ADED4D9A7DDC5E9B5FB1063FE24A32334952B24F6CF0509DFF67CD77B90F41CF967A1C700A051EEBFB8FA3D0EB2D2E70D1C46933A904A70EA277F95A5349190AAB00C3C75708D774EFFE91B5F1F46FCAB7E4A1E0D824A75C4E97EF307A55B34779429CDADB4B12EAEEDAC21429417F14B55702EC59A725955B27637373E9CD535E93E3B9C99B3D6E7C975D8C2EED1"
-place_id = "10449761463"  # Replace with actual place ID
+# Define necessary structures
+class POINT(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
 
-# Get auth ticket
-headers = {
-    "Cookie": f".ROBLOSECURITY={cookie}",
-    "User-Agent": "Roblox/WinInet",
-    "Referer": "https://www.roblox.com/",
-}
-res = requests.post("https://auth.roblox.com/v1/authentication-ticket", headers=headers)
-print(res.text)
-auth_ticket = res.headers.get("rbx-authentication-ticket")
+class INPUT(ctypes.Structure):
+    class _INPUT(ctypes.Union):
+        class _MOUSEINPUT(ctypes.Structure):
+            _fields_ = [
+                ("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
+            ]
+        _fields_ = [("mi", _MOUSEINPUT)]
+    _anonymous_ = ("_input",)
+    _fields_ = [("type", ctypes.c_ulong), ("_input", _INPUT)]
 
-# Build roblox-player URL
-if auth_ticket:
-    timestamp = int(time.time())
-    url = (
-        f"roblox-player:1+launchmode:play"
-        f"+gameinfo:{auth_ticket}"
-        f"+launchtime:{timestamp}"
-        f"+placelauncherurl:https://www.roblox.com/Game/PlaceLauncher.ashx"
-        f"?request=RequestGame&placeId={place_id}&isPlayTogether=false"
-    )
-    webbrowser.open(url)
-else:
-    print("Failed to get auth ticket.")
+# Constants
+INPUT_MOUSE = 0
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_ABSOLUTE = 0x8000
+MOUSEEVENTF_MOVE_RELATIVE = 0x0000  # just for clarity
+
+# Create SendInput function
+SendInput = ctypes.windll.user32.SendInput
+
+def move_mouse_relative(dx, dy):
+    extra = ctypes.c_ulong(0)
+    mi = INPUT._INPUT._MOUSEINPUT(dx=dx, dy=dy, mouseData=0,
+                                   dwFlags=MOUSEEVENTF_MOVE,
+                                   time=0,
+                                   dwExtraInfo=ctypes.pointer(extra))
+    inp = INPUT(type=INPUT_MOUSE, _input=INPUT._INPUT(mi=mi))
+    SendInput(1, ctypes.pointer(inp), ctypes.sizeof(inp))
+
+# Example: move mouse to the right for 2 seconds
+
+time.sleep(5)
+
+for _ in range(500):
+    move_mouse_relative(5, 0)
+    time.sleep(0.01)

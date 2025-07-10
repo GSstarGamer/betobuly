@@ -24,12 +24,13 @@ import keyboard
 import asyncio
 import aiohttp
 import traceback
+from pynput.keyboard import Key, Controller
 
-time.sleep(60)
 
 TESTING = False
-VERSION = "v3.2"
-
+VERSION = "v4"
+if not TESTING:
+    time.sleep(60)
 
 def retriveToken(max_retries: int = 10, retry_delay: float = 2.0) -> str:
     global TESTING
@@ -156,54 +157,12 @@ async def main():
             bot.userBrother = await bot.fetch_user(1184371995773780021) or None
             updaterChecker()
             updateCheck.start()
-            startUpCheck()
             startTerms(5)
             await channel.send(content="Beeto has logged in!")
             await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
         else:
             bot.userBrother = await bot.fetch_user(452531598689042444) or None
             print("Testing bot started!")
-
-        
-            
-
-
-    # @client.event
-    # async def on_message(message):
-    #     # Ignore bot's own messages
-    #     if message.author == client.user:
-    #         return
-
-    #     # Only log messages from the specific channel
-    #     if message.channel.id == TARGET_CHANNEL_ID:
-    #         if message.content.lower() == "what is running":
-    #             string = "# Active windows:\n"
-    #             for window in pywinctl.getAllWindows():
-    #                 if window.title != "":
-    #                     string += f"## - {window.title}\n"
-    #             await message.channel.send(string)
-    #         if message.content.lower() == "close roblox":
-    #             closeWindow("roblox")
-    #             await message.channel.send("Closed Ro/pblox")
-    #         if message.content.lower() == "close chrome":
-    #             closeWindow("chrome")
-    #             await message.channel.send("Closed chrome")
-    #         if message.content.lower() == "open terms":
-    #             startTerms()
-    #             await message.channel.send("opened terms")
-    #         if message.content.lower() == "ss roblox":
-    #             if pywinctl.getActiveWindowTitle().lower() == "roblox":
-    #                 screenshot = pyautogui.screenshot()
-    #                 buffer = io.BytesIO()
-    #                 screenshot.save(buffer, format="PNG")
-    #                 buffer.seek(0)
-    #                 await message.channel.send("Screenshot of Roblox", file=discord.File(buffer, filename="screenshot.png"))
-    #             else:
-    #                 await message.channel.send("Roblox is not open")
-    #         if message.content.lower() == "minimize all":
-    #             keyboard.send("windows+d")
-                
-    #             await message.channel.send(f"Done") 
 
     def get_original_exe_path():
         if getattr(sys, 'frozen', False):
@@ -487,6 +446,20 @@ async def main():
         elif method == "PATCH":
             res = requests.patch(f"https://discord.com/api/v{version}/{path}", json=json, headers=headers)
         return res
+    
+
+    @bot.slash_command(name="key", description="Press or hold a key")
+    @option("key", description="Key to press")
+    @option("hold", description="Hold key for x seconds", required=False)
+    async def presskey(ctx: discord.ApplicationContext, key: str, hold: int = 0.3):
+        await ctx.defer()
+        keyboard = Controller()
+
+        msg = await ctx.respond(f"Pressing key {key} for {hold} seconds...")
+        keyboard.press(key)
+        time.sleep(hold)
+        keyboard.release(key)
+        await msg.edit(content=f"Finished pressing key {key} for {hold} seconds!")
 
 
     @bot.event
