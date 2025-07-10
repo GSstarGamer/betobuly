@@ -157,7 +157,6 @@ async def main():
             bot.userBrother = await bot.fetch_user(1184371995773780021) or None
             updaterChecker()
             updateCheck.start()
-            startTerms(5)
             await channel.send(content="Beeto has logged in!")
             await channel.send(content="https://tenor.com/view/sonic-devil-diabolique-evil-gif-9725651736562738158")
         else:
