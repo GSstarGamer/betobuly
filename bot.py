@@ -1,74 +1,28 @@
-import time
-import discord
-import pywinctl
-import subprocess
-import psutil
-import io
-import PIL
-import os
-import win32com.client
-import sys
-import pywinctl
-from discord import option
-from pywinauto import Desktop
-import psutil
-import webbrowser
-from discord.ext import tasks
-import psutil
-import mss
-from PIL import Image
-import requests
-import tokenGrabber
-from functools import wraps
-import keyboard
 import asyncio
+import time
+from cryptography.fernet import Fernet
 import aiohttp
 import traceback
-from pynput.keyboard import Key, Controller
+import requests
+import io
 
 
 TESTING = False
-VERSION = "v4.3"
+VERSION = "v5"
 if not TESTING:
     time.sleep(60)
 
-def retriveToken(max_retries: int = 10, retry_delay: float = 2.0) -> str:
+def retriveToken() -> str:
     global TESTING
 
-    url = "https://us.infisical.com/api/v3/secrets/raw/token"
+    SECRET_KEY = b'APjDqm-gYUePZ7JJa6vH7dtOmwVhHvuCqS35HJipLl8='
+    cipher = Fernet(SECRET_KEY)
 
-    env = "dev" if TESTING else "prod"
-
-    querystring = {
-        "secretPath": "/",
-        "type": "shared",
-        "viewSecretValue": "true",
-        "expandSecretReferences": "false",
-        "include_imports": "false",
-        "environment": env,
-        "workspaceId": "0205c328-6c4a-4423-a1d0-094aea89dd82"
-    }
-
-    headers = {
-        "Authorization": "Bearer st.702c0a06-2562-4bf1-bdef-2c50b90c4d31.2465a432916e4723b9cfd8defe9daac3.9c0a5990cc2538635cf3306edb8371b6"
-    }
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            response = requests.get(url, headers=headers, params=querystring)
-            response.raise_for_status()
-
-            data = response.json()
-            if "secret" in data and "secretValue" in data["secret"]:
-                return data["secret"]["secretValue"]
-            else:
-                raise ValueError("Missing 'secretValue' in response JSON")
-
-        except (requests.HTTPError, ValueError) as e:
-            if attempt < max_retries:
-                time.sleep(retry_delay)
-            else:
-                raise RuntimeError("Max retries exceeded while trying to fetch the token.")
+    testingToken = "gAAAAABoeDy7j58qUQ4gihcuXafdgDFB63vLIwi-HcMoa0WFZcbn6BzViOVJunD3BFiIg65mxIORAzx7w_rPW_bvgvb8-ofyMVmia3xm5kAl_GqQBnuPsWbFX6_43GHMSJgdujH710bcohVhFBXKauJqZX2Ixaumpik7nzc-npDu_ll6ChORsdM="
+    mainToken = "gAAAAABoeD0OMpsvmG4NdDIzws9LradyvL3hCEh4rsvFwXUmxEofNy0x3K3SKPJ56QXbvubba579APxs23wmwjRWLJhD9jlxSQulPQSAXf__bRpqjTdkLiI7rkHeojAl5993hpnkSYUYZ6Y-eNN0Qb5M01AsotJQv3K3LmSqR-UTzB5-TpDUqY8="
+    
+    encrypted_token = testingToken if TESTING else mainToken
+    return cipher.decrypt(encrypted_token.encode()).decode()
 
 async def wait_for_discord(timeout=5, retry_delay=5):
     while True:
@@ -81,6 +35,28 @@ async def wait_for_discord(timeout=5, retry_delay=5):
             await asyncio.sleep(retry_delay)
 
 async def main():
+    import discord
+    import pywinctl
+    import subprocess
+    import psutil
+    import io
+    import PIL
+    import os
+    import win32com.client
+    import sys
+    import pywinctl
+    from discord import option
+    from pywinauto import Desktop
+    import psutil
+    import webbrowser
+    from discord.ext import tasks
+    import psutil
+    import mss
+    from PIL import Image
+    import tokenGrabber
+    from functools import wraps
+    import keyboard
+    from pynput.keyboard import Key, Controller
     await wait_for_discord()
 
     if TESTING:
@@ -511,11 +487,14 @@ async def main():
 
         classedKey = key_map.get(key)
 
-        msg = await ctx.respond(f"Pressing key {key} for {hold} seconds...")
+        if classedKey is None:
+            classedKey = key
+
+        msg = await ctx.respond(f"Pressing key `{key}` for {hold} seconds...")
         keyboard.press(classedKey)
         time.sleep(hold)
         keyboard.release(classedKey)
-        await msg.edit(content=f"Finished pressing key {key} for {hold} seconds!")
+        await msg.edit(content=f"Finished pressing key `{key}` for {hold} seconds!")
 
 
     @bot.event
@@ -523,7 +502,7 @@ async def main():
         await ctx.respond(f"❗ Error: {str(error)}")
     
     
-    await bot.start(retriveToken(50, 5))   
+    await bot.start(retriveToken())   
 
 try:
     asyncio.run(main())
