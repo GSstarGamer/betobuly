@@ -5,10 +5,15 @@ import aiohttp
 import traceback
 import requests
 import io
+import ctypes
+import time
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
 
 
 TESTING = False
-VERSION = "v5"
+VERSION = "v6"
 if not TESTING:
     time.sleep(60)
 
@@ -496,6 +501,70 @@ async def main():
         keyboard.release(classedKey)
         await msg.edit(content=f"Finished pressing key `{key}` for {hold} seconds!")
 
+
+
+
+# Define necessary structures
+    class POINT(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    class INPUT(ctypes.Structure):
+        class _INPUT(ctypes.Union):
+            class _MOUSEINPUT(ctypes.Structure):
+                _fields_ = [
+                    ("dx", ctypes.c_long),
+                    ("dy", ctypes.c_long),
+                    ("mouseData", ctypes.c_ulong),
+                    ("dwFlags", ctypes.c_ulong),
+                    ("time", ctypes.c_ulong),
+                    ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
+                ]
+            _fields_ = [("mi", _MOUSEINPUT)]
+        _anonymous_ = ("_input",)
+        _fields_ = [("type", ctypes.c_ulong), ("_input", _INPUT)]
+
+    # Constants
+    INPUT_MOUSE = 0
+    MOUSEEVENTF_MOVE = 0x0001
+    MOUSEEVENTF_ABSOLUTE = 0x8000
+    MOUSEEVENTF_MOVE_RELATIVE = 0x0000  # just for clarity
+
+    # Create SendInput function
+    SendInput = ctypes.windll.user32.SendInput
+
+    def move_mouse_relative(dx, dy):
+        extra = ctypes.c_ulong(0)
+        mi = INPUT._INPUT._MOUSEINPUT(dx=dx, dy=dy, mouseData=0,
+                                    dwFlags=MOUSEEVENTF_MOVE,
+                                    time=0,
+                                    dwExtraInfo=ctypes.pointer(extra))
+        inp = INPUT(type=INPUT_MOUSE, _input=INPUT._INPUT(mi=mi))
+        SendInput(1, ctypes.pointer(inp), ctypes.sizeof(inp))
+
+    @bot.slash_command(name="mousemove", description="Move the mouse with delta coords")
+    @option("delta_x", description="right or left", required=True)
+    @option("delta_y", description="up or down", required=True)
+    @option("steps", description="how many times to repeat a step", required=False)
+    @option("delay", description="repeat delay in seconds", required=False)
+    async def movemouse(ctx: discord.ApplicationContext, delta_x: int, delta_y: int, steps: int = 1, delay: float = 0.01):
+        await ctx.defer()
+        for i in range(steps):
+            move_mouse_relative(delta_x, delta_y)
+            time.sleep(delay)
+        await ctx.respond(f"Moved mouse {steps} time(s) with delta_x: {delta_x} and delta_y: {delta_y}")
+
+    @bot.slash_command(name="volume", description="Set the volume")
+    @option("number", description="Set volume 0.0-1.0", required=True)
+    async def volume(ctx: discord.ApplicationContext, number: float):
+        await ctx.defer()  
+        devices = AudioUtilities.GetSpeakers()
+        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+        # Set volume: 0.0 (min) to 1.0 (max)
+        volume.SetMasterVolumeLevelScalar(number, None)
+        await ctx.respond(f"Volume set to {int(number * 100)}% (This may not work)")
+  
 
     @bot.event
     async def on_application_command_error(ctx, error):
