@@ -10,10 +10,12 @@ import time
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
-
+import threading
+import tkinter as tk
+from tkinter import messagebox
 
 TESTING = False
-VERSION = "v6"
+VERSION = "v6.1"
 if not TESTING:
     time.sleep(60)
 
@@ -564,7 +566,22 @@ async def main():
         # Set volume: 0.0 (min) to 1.0 (max)
         volume.SetMasterVolumeLevelScalar(number, None)
         await ctx.respond(f"Volume set to {int(number * 100)}% (This may not work)")
-  
+
+
+    def show_prompt(text):
+        root = tk.Tk()
+        root.withdraw()
+
+        # Show a message box with an OK button
+        messagebox.showinfo("( ͡◉◞ ͜ʖ◟ ͡◉) Grow a Garden!!", " "*35 + f"\n{text}\n" + " "*35)
+    
+
+    @bot.slash_command(name="prompt", description="open a OK alert window, with your desired text")
+    @option("text", description="text", required=True)
+    async def prompt(ctx: discord.ApplicationContext, text: str):
+        await ctx.defer()  
+        threading.Thread(target=show_prompt, daemon=True, args=(text,)).start()
+        await ctx.respond(f"started alert thread. Text: {text}")
 
     @bot.event
     async def on_application_command_error(ctx, error):

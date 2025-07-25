@@ -1,10 +1,12 @@
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
+import tkinter as tk
+from tkinter import messagebox
 
-devices = AudioUtilities.GetSpeakers()
-interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-volume = cast(interface, POINTER(IAudioEndpointVolume))
+def show_prompt():
+    # Create root window but hide it
+    root = tk.Tk()
+    root.withdraw()
 
-# Set volume: 0.0 (min) to 1.0 (max)
-volume.SetMasterVolumeLevelScalar(0.5, None)  # 50%
+    # Show a message box with an OK button
+    messagebox.showinfo("( ͡◉◞ ͜ʖ◟ ͡◉) Grow a Garden!!", " "*35 + "\nHi\n" + " "*35)
+
+show_prompt()
