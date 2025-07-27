@@ -32,7 +32,7 @@ from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
 
-TESTING = True
+TESTING = False
 VERSION = "v6.3"
 if not TESTING:
     time.sleep(60)
