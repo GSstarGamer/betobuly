@@ -32,7 +32,7 @@ from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
 
-TESTING = False
+TESTING = True
 VERSION = "v6.3"
 if not TESTING:
     time.sleep(60)
@@ -134,6 +134,7 @@ async def main():
         bot.lastText = ""
         activityChanger.start()
         if not TESTING:
+            startUpCheck()
             bot.userBrother = await bot.fetch_user(1184371995773780021) or None
             updaterChecker()
             updateCheck.start()
