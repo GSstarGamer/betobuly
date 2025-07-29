@@ -86,7 +86,7 @@ async def main():
             await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=bot.lastText))
 
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=2)
     async def updateCheck():
         headers = {
             'Accept': 'application/vnd.github+json',

@@ -23,12 +23,12 @@ def build_bot():
         raise FileNotFoundError("bot.exe not found after build")
 
 def create_release_with_gh(version, exe_path):
-    print(f"Creating GitHub release {version} with {exe_path}...")
     subprocess.run([
         "gh", "release", "create", version,
         exe_path,
         "--title", version,
-        "--notes", f"Auto-release for version {version}"
+        "--notes", f"Auto-release for version {version}",
+        "--draft=false"  # ⬅️ Add this
     ], check=True)
     print("Release uploaded successfully.")
 
