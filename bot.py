@@ -33,9 +33,10 @@ import keyboard
 from pynput.keyboard import Key, Controller
 
 TESTING = False
-VERSION = "v6.5"
+VERSION = "v6.6"
 if not TESTING:
-    time.sleep(60)
+    # pass
+    time.sleep(30)
 
 def retriveToken() -> str:
     global TESTING
@@ -100,7 +101,7 @@ async def main():
                 channel = bot.get_channel(CHANNEL_ID)
                 await channel.send(content=f"New version available: {latestVersion}, Starting updater.exe and closing current build")
 
-                exe_dir = get_original_exe_path()
+                exe_dir = os.path.dirname(get_original_exe_path())
                 updater_path = os.path.join(exe_dir, "updater.exe")
                 if TESTING:
                     subprocess.call([sys.executable, updater_path], creationflags=subprocess.CREATE_NO_WINDOW)
@@ -146,9 +147,10 @@ async def main():
 
     def get_original_exe_path():
         if getattr(sys, 'frozen', False):
-            return os.path.dirname(sys.argv[0])
+            return sys.executable  # 🔥 PyInstaller .exe path
         else:
-            return os.path.dirname(os.path.abspath(__file__))
+            return os.path.abspath(os.path.join(os.path.dirname(__file__), "dist", "bot.exe"))
+
 
     def startTerms(num):
         procs = []
@@ -170,8 +172,8 @@ async def main():
 
 
     def startUpCheck():
-        exe_dir = get_original_exe_path()
-        actual_exe = os.path.join(exe_dir, "bot.exe").lower()
+        actual_exe = get_original_exe_path().lower()
+
 
         shell = win32com.client.Dispatch("WScript.Shell")
         startup = shell.SpecialFolders("Startup")
@@ -237,7 +239,7 @@ async def main():
 
 
     def updaterChecker():
-        exe_dir = get_original_exe_path()
+        exe_dir = os.path.dirname(get_original_exe_path())
         updater_path = os.path.join(exe_dir, "updater.exe")
         if not os.path.exists(updater_path):
                 headers = {
