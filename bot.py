@@ -32,8 +32,8 @@ from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
 
-TESTING = True
-VERSION = "v6.3"
+TESTING = False
+VERSION = "v6.5"
 if not TESTING:
     time.sleep(60)
 
@@ -171,15 +171,31 @@ async def main():
 
     def startUpCheck():
         exe_dir = get_original_exe_path()
-        actual_exe = os.path.join(exe_dir, "bot.exe") 
+        actual_exe = os.path.join(exe_dir, "bot.exe").lower()
 
         shell = win32com.client.Dispatch("WScript.Shell")
         startup = shell.SpecialFolders("Startup")
-        shortcut_path = os.path.join(startup, "DesktopStartUp.lnk")
+        shortcut_name = "DesktopStartUp.lnk"
+        correct_shortcut_path = os.path.join(startup, shortcut_name)
 
-        if not os.path.exists(shortcut_path):
-            shortcut = shell.CreateShortcut(shortcut_path)
-            shortcut.TargetPath = actual_exe  # ✅ the original EXE on disk
+        for file_name in os.listdir(startup):
+            if not file_name.lower().endswith(".lnk"):
+                continue
+
+            path = os.path.join(startup, file_name)
+            shortcut = shell.CreateShortcut(path)
+            target = shortcut.TargetPath.lower()
+
+            if "bot.exe" in target:
+                if os.path.normpath(target) != os.path.normpath(actual_exe):
+                    os.remove(path)
+
+            elif file_name == shortcut_name and target != actual_exe:
+                os.remove(path)
+
+        if not os.path.exists(correct_shortcut_path):
+            shortcut = shell.CreateShortcut(correct_shortcut_path)
+            shortcut.TargetPath = actual_exe
             shortcut.WorkingDirectory = os.path.dirname(actual_exe)
             shortcut.IconLocation = actual_exe
             shortcut.Save()
